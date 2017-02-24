@@ -1,5 +1,7 @@
 package be.nabu.eai.module.jdbc.dialects;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -180,10 +182,10 @@ public class PostgreSQL implements SQLDialect {
 		else if (Integer.class.isAssignableFrom(instanceClass)) {
 			return "integer";
 		}
-		else if (Long.class.isAssignableFrom(instanceClass)) {
+		else if (Long.class.isAssignableFrom(instanceClass) || BigInteger.class.isAssignableFrom(instanceClass)) {
 			return "bigint";
 		}
-		else if (Double.class.isAssignableFrom(instanceClass)) {
+		else if (Double.class.isAssignableFrom(instanceClass) || BigDecimal.class.isAssignableFrom(instanceClass)) {
 			return "decimal";
 		}
 		else if (Float.class.isAssignableFrom(instanceClass)) {
