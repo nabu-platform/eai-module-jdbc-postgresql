@@ -62,6 +62,7 @@ public class PostgreSQL implements SQLDialect {
 			if (element != null && element.getType() instanceof SimpleType) {
 				SimpleType<?> type = (SimpleType<?>) element.getType();
 				String postgreType = null;
+				boolean isList = element.getType().isList(element.getProperties());
 				if (UUID.class.isAssignableFrom(type.getInstanceClass())) {
 					postgreType = "uuid";
 				}
@@ -77,9 +78,17 @@ public class PostgreSQL implements SQLDialect {
 				else if (Boolean.class.isAssignableFrom(type.getInstanceClass())) {
 					postgreType = "boolean";
 				}
+				// if we have a list, we want to always set a type, because suppose you have a text field and you do this:
+				// where :value is null or my_field = any(:value)
+				// this does _not_ work if the value is null and nothing is done explicitly, you get "postgresql op ANY/ALL (array) requires array on right side"
+				// it does work however if we do this
+				// where :value is null or my_field = any(:value::text[])
+				// note that this does not seem to work with integers, if the above is the exact same scenario but with integer[] you get: ERROR: cannot cast type integer to integer[]
+				else if (isList) {
+					postgreType = getPredefinedSQLType(type.getInstanceClass());
+				}
 				if (postgreType != null) {
 					result.append("::").append(postgreType);
-					boolean isList = element.getType().isList(element.getProperties());
 					if (isList) {
 						result.append("[]");
 					}
@@ -177,7 +186,7 @@ public class PostgreSQL implements SQLDialect {
 			return "text";
 		}
 		else if (byte[].class.isAssignableFrom(instanceClass)) {
-			return "varbinary";
+			return "bytea";
 		}
 		else if (Integer.class.isAssignableFrom(instanceClass)) {
 			return "integer";
