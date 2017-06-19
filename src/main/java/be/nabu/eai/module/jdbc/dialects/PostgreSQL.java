@@ -104,7 +104,7 @@ public class PostgreSQL implements SQLDialect {
 	}
 
 	@Override
-	public String limit(String sql, Integer offset, Integer limit) {
+	public String limit(String sql, Long offset, Integer limit) {
 		if (offset != null) {
 			sql = sql + " OFFSET " + offset;
 		}
