@@ -99,8 +99,11 @@ public class PostgreSQL implements SQLDialect {
 		if (last < sql.length()) {
 			result.append(sql.substring(last, sql.length()));
 		}
-		logger.trace("Rewrote '{}'\n{}", new Object[] { sql, result });
-		return result.toString();
+		String rewritten = result.toString();
+		// replace in () with =any(), only if it contains a variable
+		rewritten = rewritten.replaceAll("([\\s]+)in[\\s]*\\([\\s]*:", "$1= any(:");
+		logger.trace("Rewrote '{}'\n{}", new Object[] { sql, rewritten });
+		return rewritten;
 	}
 
 	@Override
