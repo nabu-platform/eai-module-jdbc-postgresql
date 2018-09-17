@@ -24,6 +24,7 @@ import be.nabu.libs.types.api.ComplexType;
 import be.nabu.libs.types.api.DefinedType;
 import be.nabu.libs.types.api.Element;
 import be.nabu.libs.types.api.SimpleType;
+import be.nabu.libs.types.base.Duration;
 import be.nabu.libs.types.properties.CollectionNameProperty;
 import be.nabu.libs.types.properties.ForeignKeyProperty;
 import be.nabu.libs.types.properties.FormatProperty;
@@ -79,6 +80,9 @@ public class PostgreSQL implements SQLDialect {
 						case TIME: postgreType = "time"; break;
 						default: postgreType = "timestamp";
 					}
+				}
+				else if (Duration.class.isAssignableFrom(type.getInstanceClass())) {
+					postgreType = "interval";
 				}
 				else if (Boolean.class.isAssignableFrom(type.getInstanceClass())) {
 					postgreType = "boolean";
@@ -193,6 +197,9 @@ public class PostgreSQL implements SQLDialect {
 			// best practice to use application level limits on text
 			return "text";
 		}
+		else if (Duration.class.isAssignableFrom(instanceClass)) {
+			return "interval";
+		}
 		else if (byte[].class.isAssignableFrom(instanceClass)) {
 			return "bytea";
 		}
@@ -224,7 +231,7 @@ public class PostgreSQL implements SQLDialect {
 			return null;
 		}
 	}
-
+	
 	public static String getName(Value<?>...properties) {
 		String value = ValueUtils.getValue(CollectionNameProperty.getInstance(), properties);
 		if (value == null) {
