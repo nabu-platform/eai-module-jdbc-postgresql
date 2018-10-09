@@ -1,1 +1,2 @@
 be.nabu.eai.module.jdbc.dialects.PGIntervalToDuration
+be.nabu.eai.module.jdbc.dialects.PGIntervalToString
