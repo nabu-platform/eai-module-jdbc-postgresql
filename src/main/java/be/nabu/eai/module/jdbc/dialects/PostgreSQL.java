@@ -28,6 +28,7 @@ import be.nabu.libs.types.base.Duration;
 import be.nabu.libs.types.properties.CollectionNameProperty;
 import be.nabu.libs.types.properties.ForeignKeyProperty;
 import be.nabu.libs.types.properties.FormatProperty;
+import be.nabu.libs.types.properties.GeneratedProperty;
 import be.nabu.libs.types.properties.MinOccursProperty;
 import be.nabu.libs.types.properties.NameProperty;
 import be.nabu.libs.types.properties.UniqueProperty;
@@ -129,6 +130,13 @@ public class PostgreSQL implements SQLDialect {
 	@Override
 	public String buildCreateSQL(ComplexType type) {
 		StringBuilder builder = new StringBuilder();
+		for (Element<?> child : TypeUtils.getAllChildren(type)) {
+			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
+			if (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue()) {
+				String seqName = "seq_" + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + "_" + EAIRepositoryUtils.uncamelify(child.getName()); 
+				builder.append("create sequence ").append(seqName).append(";\n");
+			}
+		}
 		builder.append("create table " + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + " (\n");
 		boolean first = true;
 		for (Element<?> child : TypeUtils.getAllChildren(type)) {
@@ -138,6 +146,7 @@ public class PostgreSQL implements SQLDialect {
 			else {
 				builder.append(",\n");
 			}
+			
 			// if we have a complex type, generate an id field that references it
 			if (child.getType() instanceof ComplexType) {
 				builder.append("\t" + EAIRepositoryUtils.uncamelify(child.getName()) + "_id uuid");
@@ -185,6 +194,12 @@ public class PostgreSQL implements SQLDialect {
 			Value<Boolean> property = child.getProperty(UniqueProperty.getInstance());
 			if (property != null && property.getValue()) {
 				builder.append(" unique");
+			}
+			
+			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
+			if (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue()) {
+				String seqName = "seq_" + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + "_" + EAIRepositoryUtils.uncamelify(child.getName());
+				builder.append(" default nextval('" + seqName + "')");
 			}
 		}
 		builder.append("\n);");
