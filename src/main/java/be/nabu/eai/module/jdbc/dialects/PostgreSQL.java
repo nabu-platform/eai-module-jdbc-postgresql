@@ -181,12 +181,13 @@ public class PostgreSQL implements SQLDialect {
 				}
 			}
 			
+			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
 			if (child.getName().equals("id")) {
 				builder.append(" primary key");
 			}
 			else {
 				Integer value = ValueUtils.getValue(MinOccursProperty.getInstance(), child.getProperties());
-				if (value == null || value > 0) {
+				if (value == null || value > 0 || (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue())) {
 					builder.append(" not null");
 				}
 			}
@@ -196,7 +197,6 @@ public class PostgreSQL implements SQLDialect {
 				builder.append(" unique");
 			}
 			
-			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
 			if (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue()) {
 				String seqName = "seq_" + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + "_" + EAIRepositoryUtils.uncamelify(child.getName());
 				builder.append(" default nextval('" + seqName + "')");
