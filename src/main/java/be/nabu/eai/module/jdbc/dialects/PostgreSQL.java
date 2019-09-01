@@ -128,7 +128,7 @@ public class PostgreSQL implements SQLDialect {
 	}
 
 	@Override
-	public String buildCreateSQL(ComplexType type) {
+	public String buildCreateSQL(ComplexType type, boolean compact) {
 		StringBuilder builder = new StringBuilder();
 		for (Element<?> child : TypeUtils.getAllChildren(type)) {
 			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
@@ -137,19 +137,19 @@ public class PostgreSQL implements SQLDialect {
 				builder.append("create sequence ").append(seqName).append(";\n");
 			}
 		}
-		builder.append("create table " + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + " (\n");
+		builder.append("create table " + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + " (" + (compact ? "" : "\n"));
 		boolean first = true;
 		for (Element<?> child : TypeUtils.getAllChildren(type)) {
 			if (first) {
 				first = false;
 			}
 			else {
-				builder.append(",\n");
+				builder.append("," + (compact ? " " : "\n\t"));
 			}
 			
 			// if we have a complex type, generate an id field that references it
 			if (child.getType() instanceof ComplexType) {
-				builder.append("\t" + EAIRepositoryUtils.uncamelify(child.getName()) + "_id uuid");
+				builder.append((compact ? "" : "\t") + EAIRepositoryUtils.uncamelify(child.getName()) + "_id uuid");
 			}
 			// differentiate between dates
 			else if (Date.class.isAssignableFrom(((SimpleType<?>) child.getType()).getInstanceClass())) {
@@ -161,10 +161,10 @@ public class PostgreSQL implements SQLDialect {
 				else if (!format.equals("date") && !format.equals("time")) {
 					format = "timestamp";
 				}
-				builder.append("\t" + EAIRepositoryUtils.uncamelify(child.getName())).append(" ").append(format);
+				builder.append((compact ? "" : "\t") + EAIRepositoryUtils.uncamelify(child.getName())).append(" ").append(format);
 			}
 			else {
-				builder.append("\t" + EAIRepositoryUtils.uncamelify(child.getName())).append(" ")
+				builder.append((compact ? "" : "\t") + EAIRepositoryUtils.uncamelify(child.getName())).append(" ")
 					.append(getPredefinedSQLType(((SimpleType<?>) child.getType()).getInstanceClass()));
 			}
 			
@@ -202,7 +202,7 @@ public class PostgreSQL implements SQLDialect {
 				builder.append(" default nextval('" + seqName + "')");
 			}
 		}
-		builder.append("\n);");
+		builder.append((compact ? "" : "\n") + ");");
 		return builder.toString();
 	}
 
@@ -256,7 +256,7 @@ public class PostgreSQL implements SQLDialect {
 	}
 	
 	@Override
-	public String buildInsertSQL(ComplexContent content) {
+	public String buildInsertSQL(ComplexContent content, boolean compact) {
 		StringBuilder keyBuilder = new StringBuilder();
 		StringBuilder valueBuilder = new StringBuilder();
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -266,8 +266,8 @@ public class PostgreSQL implements SQLDialect {
 			if (element.getType() instanceof SimpleType) {
 				Class<?> instanceClass = ((SimpleType<?>) element.getType()).getInstanceClass();
 				if (!keyBuilder.toString().isEmpty()) {
-					keyBuilder.append(",\n\t");
-					valueBuilder.append(",\n\t");
+					keyBuilder.append(",").append(compact ? " " : "\n\t");
+					valueBuilder.append(",").append(compact ? " " : "\n\t");
 				}
 				keyBuilder.append(EAIRepositoryUtils.uncamelify(element.getName()));
 				Object value = content.get(element.getName());
@@ -299,6 +299,7 @@ public class PostgreSQL implements SQLDialect {
 						if (URI.class.isAssignableFrom(instanceClass) || String.class.isAssignableFrom(instanceClass) || UUID.class.isAssignableFrom(instanceClass)) {
 							valueBuilder.append("'");
 							closeQuote = true;
+							value = value.toString().replace("'", "''");
 						}
 						valueBuilder.append(value.toString());
 						if (closeQuote) {
@@ -308,6 +309,6 @@ public class PostgreSQL implements SQLDialect {
 				}
 			}
 		}
-		return "insert into " + EAIRepositoryUtils.uncamelify(getName(content.getType().getProperties())) + " (\n\t" + keyBuilder.toString() + "\n) values (\n\t" + valueBuilder.toString() + "\n);";
+		return "insert into " + EAIRepositoryUtils.uncamelify(getName(content.getType().getProperties())) + " (" + (compact ? "" : "\n\t") + keyBuilder.toString() + (compact ? "" : "\n") + ") values (" + (compact ? "" : "\n\t") + valueBuilder.toString() + (compact ? "" : "\n") + ");";
 	}
 }
