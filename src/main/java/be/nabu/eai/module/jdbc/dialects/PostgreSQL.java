@@ -144,7 +144,7 @@ public class PostgreSQL implements SQLDialect {
 				first = false;
 			}
 			else {
-				builder.append("," + (compact ? " " : "\n\t"));
+				builder.append("," + (compact ? " " : "\n"));
 			}
 			
 			// if we have a complex type, generate an id field that references it
