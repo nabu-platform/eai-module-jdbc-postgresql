@@ -263,7 +263,7 @@ public class PostgreSQL implements SQLDialect {
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 		formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 		Date date = new Date();
-		for (Element<?> element : TypeUtils.getAllChildren(content.getType())) {
+		for (Element<?> element : JDBCUtils.getFieldsInTable(content.getType())) {
 			if (element.getType() instanceof SimpleType) {
 				Class<?> instanceClass = ((SimpleType<?>) element.getType()).getInstanceClass();
 				if (!keyBuilder.toString().isEmpty()) {
