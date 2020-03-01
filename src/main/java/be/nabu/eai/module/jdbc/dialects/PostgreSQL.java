@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import be.nabu.eai.repository.EAIRepositoryUtils;
 import be.nabu.libs.property.ValueUtils;
 import be.nabu.libs.property.api.Value;
+import be.nabu.libs.services.jdbc.JDBCUtils;
 import be.nabu.libs.services.jdbc.api.SQLDialect;
 import be.nabu.libs.types.DefinedTypeResolverFactory;
 import be.nabu.libs.types.TypeUtils;
@@ -130,7 +131,7 @@ public class PostgreSQL implements SQLDialect {
 	@Override
 	public String buildCreateSQL(ComplexType type, boolean compact) {
 		StringBuilder builder = new StringBuilder();
-		for (Element<?> child : TypeUtils.getAllChildren(type)) {
+		for (Element<?> child : JDBCUtils.getFieldsInTable(type)) {
 			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
 			if (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue()) {
 				String seqName = "seq_" + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + "_" + EAIRepositoryUtils.uncamelify(child.getName()); 
@@ -139,7 +140,7 @@ public class PostgreSQL implements SQLDialect {
 		}
 		builder.append("create table " + EAIRepositoryUtils.uncamelify(getName(type.getProperties())) + " (" + (compact ? "" : "\n"));
 		boolean first = true;
-		for (Element<?> child : TypeUtils.getAllChildren(type)) {
+		for (Element<?> child : JDBCUtils.getFieldsInTable(type)) {
 			if (first) {
 				first = false;
 			}
