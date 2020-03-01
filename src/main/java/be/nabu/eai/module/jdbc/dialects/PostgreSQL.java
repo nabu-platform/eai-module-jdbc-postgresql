@@ -19,7 +19,6 @@ import be.nabu.libs.property.api.Value;
 import be.nabu.libs.services.jdbc.JDBCUtils;
 import be.nabu.libs.services.jdbc.api.SQLDialect;
 import be.nabu.libs.types.DefinedTypeResolverFactory;
-import be.nabu.libs.types.TypeUtils;
 import be.nabu.libs.types.api.ComplexContent;
 import be.nabu.libs.types.api.ComplexType;
 import be.nabu.libs.types.api.DefinedType;
