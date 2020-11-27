@@ -31,7 +31,7 @@ public class PostgresWizard implements JDBCPoolWizard<PostgresParameters> {
 		if (jdbcUrl != null && jdbcUrl.startsWith("jdbc:postgresql:")) {
 			PostgresParameters parameters = new PostgresParameters();
 			try {
-				URI uri = new URI(URIUtils.encodeURI(jdbcUrl));
+				URI uri = new URI(URIUtils.encodeURI(jdbcUrl.substring("jdbc:postgresql:".length())));
 				parameters.setHost(uri.getHost());
 				parameters.setPort(uri.getPort() < 0 ? null : uri.getPort());
 				// replace leading slashes
