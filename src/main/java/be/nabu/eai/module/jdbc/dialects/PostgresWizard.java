@@ -59,6 +59,8 @@ public class PostgresWizard implements JDBCPoolWizard<PostgresParameters> {
 			Class clazz = PostgreSQL.class;
 			existing.getConfig().setDialect(clazz);
 			existing.getConfig().setDriverClassName("org.postgresql.Driver");
+			existing.getConfig().setUsername(properties.getUsername());
+			existing.getConfig().setPassword(properties.getPassword());
 			return existing;
 		}
 		catch (Exception e) {
