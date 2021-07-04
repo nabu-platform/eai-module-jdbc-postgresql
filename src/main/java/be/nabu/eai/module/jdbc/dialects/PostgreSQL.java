@@ -38,6 +38,11 @@ import be.nabu.libs.types.utils.DateUtils.Granularity;
 public class PostgreSQL implements SQLDialect {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
+	// postgresql does _not_ expand the * for count queries which end up being a ton faster. had a 5s count query reduced to 200ms even though the explain cost "only" decreased from 150.000 to 50.000
+	@Override
+	public String getTotalCountQuery(String query) {
+		return SQLDialect.getDefaultTotalCountQuery(query, true);
+	}
 	
 	@Override
 	public String getSQLName(Class<?> instanceClass) {
