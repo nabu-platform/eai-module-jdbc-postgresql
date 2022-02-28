@@ -29,6 +29,7 @@ import be.nabu.libs.types.properties.CollectionNameProperty;
 import be.nabu.libs.types.properties.ForeignKeyProperty;
 import be.nabu.libs.types.properties.FormatProperty;
 import be.nabu.libs.types.properties.GeneratedProperty;
+import be.nabu.libs.types.properties.IndexedProperty;
 import be.nabu.libs.types.properties.MinOccursProperty;
 import be.nabu.libs.types.properties.NameProperty;
 import be.nabu.libs.types.properties.UniqueProperty;
@@ -208,6 +209,17 @@ public class PostgreSQL implements SQLDialect {
 			}
 		}
 		builder.append((compact ? "" : "\n") + ");");
+		// create indexes
+		builder.append("\n");
+		for (Element<?> child : JDBCUtils.getFieldsInTable(type)) {
+			Value<Boolean> indexedProperty = child.getProperty(IndexedProperty.getInstance());
+			if (indexedProperty != null && indexedProperty.getValue() != null && indexedProperty.getValue()) {
+				String tableName = EAIRepositoryUtils.uncamelify(getName(type.getProperties()));
+				String columnName = EAIRepositoryUtils.uncamelify(child.getName());
+				String seqName = "idx_" + tableName + "_" + columnName; 
+				builder.append("create index ").append(seqName).append(" on " + tableName + "(" + columnName + ")").append(";\n");
+			}
+		}
 		return builder.toString();
 	}
 
@@ -260,6 +272,12 @@ public class PostgreSQL implements SQLDialect {
 		return value;
 	}
 	
+	
+	@Override
+	public boolean supportNumericGroupBy() {
+		return true;
+	}
+
 	@Override
 	public String buildInsertSQL(ComplexContent content, boolean compact) {
 		StringBuilder keyBuilder = new StringBuilder();
