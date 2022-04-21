@@ -3,6 +3,7 @@ package be.nabu.eai.module.jdbc.dialects;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import be.nabu.eai.repository.EAIRepositoryUtils;
 import be.nabu.libs.property.ValueUtils;
 import be.nabu.libs.property.api.Value;
+import be.nabu.libs.services.api.ServiceException;
 import be.nabu.libs.services.jdbc.JDBCUtils;
 import be.nabu.libs.services.jdbc.api.SQLDialect;
 import be.nabu.libs.types.DefinedTypeResolverFactory;
@@ -334,4 +336,30 @@ public class PostgreSQL implements SQLDialect {
 		}
 		return "insert into " + EAIRepositoryUtils.uncamelify(getName(content.getType().getProperties())) + " (" + (compact ? "" : "\n\t") + keyBuilder.toString() + (compact ? "" : "\n") + ") values (" + (compact ? "" : "\n\t") + valueBuilder.toString() + (compact ? "" : "\n") + ");";
 	}
+
+	@Override
+	public Exception wrapException(SQLException e) {
+		// unwind
+		while (e.getNextException() != null) {
+			e = e.getNextException();
+		}
+		
+		// we have a unique constraint issue
+		if (e.getMessage().indexOf("duplicate key value violates unique constraint") >= 0) {
+			String field = null;
+			int firstIndex = e.getMessage().indexOf('"');
+			if (firstIndex > 0) {
+				int secondIndex = e.getMessage().indexOf('"', firstIndex + 1);
+				if (secondIndex > 0) {
+					field = e.getMessage().substring(firstIndex + 1, secondIndex);
+				}
+			}
+			ServiceException serviceException = new ServiceException("JDBC-UNIQUE-VIOLATION", "Unique constraint violation", e);
+			serviceException.setDescription("Unique constraint violation for " + (field == null ? "unknown field" : "'" + field + "'"));
+			return serviceException;
+		}
+		
+		return null;
+	}
+	
 }
