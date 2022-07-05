@@ -26,6 +26,7 @@ import be.nabu.libs.types.api.ComplexType;
 import be.nabu.libs.types.api.DefinedType;
 import be.nabu.libs.types.api.Element;
 import be.nabu.libs.types.api.SimpleType;
+import be.nabu.libs.types.api.Type;
 import be.nabu.libs.types.base.Duration;
 import be.nabu.libs.types.properties.CollectionNameProperty;
 import be.nabu.libs.types.properties.ForeignKeyProperty;
@@ -34,6 +35,7 @@ import be.nabu.libs.types.properties.GeneratedProperty;
 import be.nabu.libs.types.properties.IndexedProperty;
 import be.nabu.libs.types.properties.MinOccursProperty;
 import be.nabu.libs.types.properties.NameProperty;
+import be.nabu.libs.types.properties.PrimaryKeyProperty;
 import be.nabu.libs.types.properties.UniqueProperty;
 import be.nabu.libs.types.utils.DateUtils;
 import be.nabu.libs.types.utils.DateUtils.Granularity;
@@ -176,6 +178,29 @@ public class PostgreSQL implements SQLDialect {
 					.append(getPredefinedSQLType(((SimpleType<?>) child.getType()).getInstanceClass()));
 			}
 			
+			boolean isList = child.getType().isList(child.getProperties());
+			if (isList) {
+				builder.append("[]");
+			}
+			
+			Value<Boolean> primaryKeyProperty = child.getProperty(PrimaryKeyProperty.getInstance());
+			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
+			
+			if (primaryKeyProperty != null && primaryKeyProperty.getValue() != null && primaryKeyProperty.getValue()) {
+				builder.append(" primary key");
+			}
+			else {
+				if (child.getName().equals("id")) {
+					builder.append(" primary key");
+				}
+				else {
+					Integer value = ValueUtils.getValue(MinOccursProperty.getInstance(), child.getProperties());
+					if (value == null || value > 0 || (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue())) {
+						builder.append(" not null");
+					}
+				}
+			}
+			
 			Value<String> foreignKey = child.getProperty(ForeignKeyProperty.getInstance());
 			if (foreignKey != null) {
 				String[] split = foreignKey.getValue().split(":");
@@ -188,15 +213,21 @@ public class PostgreSQL implements SQLDialect {
 					builder.append(" references " + EAIRepositoryUtils.uncamelify(referencedName) + "(" + split[1] + ")");
 				}
 			}
-			
-			Value<Boolean> generatedProperty = child.getProperty(GeneratedProperty.getInstance());
-			if (child.getName().equals("id")) {
-				builder.append(" primary key");
-			}
-			else {
-				Integer value = ValueUtils.getValue(MinOccursProperty.getInstance(), child.getProperties());
-				if (value == null || value > 0 || (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue())) {
-					builder.append(" not null");
+			// if we have a supertype, it has a field by the exact same name which is also a primary key, we set a foreign key
+			else if (primaryKeyProperty != null && primaryKeyProperty.getValue() != null && primaryKeyProperty.getValue()) {
+				Type superType = type.getSuperType();
+				if (superType instanceof ComplexType) {
+					Element<?> element = ((ComplexType) superType).get(child.getName());
+					if (element != null) {
+						Value<Boolean> superPrimaryKey = element.getProperty(PrimaryKeyProperty.getInstance());
+						String superName = ValueUtils.getValue(CollectionNameProperty.getInstance(), superType.getProperties());
+						if (superName == null) {
+							superName = superType.getName();
+						}
+						if (superPrimaryKey != null && superPrimaryKey.getValue() != null && superPrimaryKey.getValue()) {
+							builder.append(" references " + EAIRepositoryUtils.uncamelify(superName) + "(" + child.getName() + ")");
+						}
+					}
 				}
 			}
 			
