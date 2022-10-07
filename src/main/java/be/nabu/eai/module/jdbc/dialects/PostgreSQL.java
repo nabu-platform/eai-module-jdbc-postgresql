@@ -165,8 +165,15 @@ public class PostgreSQL implements SQLDialect {
 			else if (Date.class.isAssignableFrom(((SimpleType<?>) child.getType()).getInstanceClass())) {
 				Value<String> property = child.getProperty(FormatProperty.getInstance());
 				String format = property == null ? "dateTime" : property.getValue();
+				Granularity granularity = format == null ? Granularity.TIMESTAMP : DateUtils.getGranularity(format);
 				if (format.equals("dateTime")) {
 					format = "timestamp";
+				}
+				else if (granularity == Granularity.TIME) {
+					format = "time";
+				}
+				else if (granularity == Granularity.DATE) {
+					format = "date";
 				}
 				else if (!format.equals("date") && !format.equals("time")) {
 					format = "timestamp";
