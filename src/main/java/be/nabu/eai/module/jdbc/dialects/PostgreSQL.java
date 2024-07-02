@@ -50,6 +50,20 @@ public class PostgreSQL implements SQLDialect {
 	}
 	
 	@Override
+	public String getSQLNullName(Element<?> element) {
+		String name = SQLDialect.super.getSQLName(element);
+		boolean isList = element.getType().isList(element.getProperties());
+		// postgresql has a name like "uuid", but also "uuid_array"
+		// https://www.javadoc.io/doc/org.postgresql/postgresql/9.4.1208.jre6/constant-values.html
+		// in the past they allowed you to pass in "uuid" even though you were setting an array, but in recent versions this started erroring out with a "can't cast uuid to uuid[]" exception
+		// note that this is for setting a null value!
+		if (isList) {
+			name += "_array";
+		}
+		return name;
+	}
+
+	@Override
 	public String getSQLName(Class<?> instanceClass) {
 		if (UUID.class.isAssignableFrom(instanceClass)) {
 			return "uuid";
