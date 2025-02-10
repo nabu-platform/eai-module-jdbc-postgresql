@@ -46,6 +46,7 @@ import be.nabu.libs.types.api.SimpleType;
 import be.nabu.libs.types.api.Type;
 import be.nabu.libs.types.base.Duration;
 import be.nabu.libs.types.properties.CollectionNameProperty;
+import be.nabu.libs.types.properties.DefaultValueProperty;
 import be.nabu.libs.types.properties.ForeignKeyProperty;
 import be.nabu.libs.types.properties.FormatProperty;
 import be.nabu.libs.types.properties.GeneratedProperty;
@@ -233,12 +234,18 @@ public class PostgreSQL implements SQLDialect {
 				}
 				else {
 					Integer value = ValueUtils.getValue(MinOccursProperty.getInstance(), child.getProperties());
+					boolean mandatory = false;
 					if (value == null || value > 0 || (generatedProperty != null && generatedProperty.getValue() != null && generatedProperty.getValue())) {
 						builder.append(" not null");
-						// for mandatory boolean values, we automatically insert "default false", this makes it easier to add mandatory boolean later on with alter scripts
-						if (Boolean.class.isAssignableFrom(((SimpleType<?>) child.getType()).getInstanceClass())) {
-							builder.append(" default false");
-						}
+						mandatory = true;
+					}
+					Value<String> defaultValue = child.getProperty(DefaultValueProperty.getInstance());
+					if (defaultValue != null && defaultValue.getValue() != null && !defaultValue.getValue().trim().isEmpty()) {
+						builder.append(" default " + defaultValue.getValue());
+					}
+					// for mandatory boolean values, we automatically insert "default false", this makes it easier to add mandatory boolean later on with alter scripts
+					else if (mandatory && Boolean.class.isAssignableFrom(((SimpleType<?>) child.getType()).getInstanceClass())) {
+						builder.append(" default false");
 					}
 				}
 			}
